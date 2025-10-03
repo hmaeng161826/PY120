@@ -1,0 +1,194 @@
+"""
+Classes:
+    Square: Represents a single cell on the board and its marker.
+    Board:  Stores and renders the 3x3 grid of Square objects.
+    Player/Human/Computer: Players with associated markers.
+    TTTGame: Orchestrates gameplay, moves, and win/tie detection.
+"""
+
+import random
+import os
+
+def clear_screen():
+    """Clear the terminal screen."""
+    os.system('clear')
+
+class Square:
+    """A single board cell that holds a marker."""
+    INITIAL_MARKER = " "
+    HUMAN_MARKER = "X"
+    COMPUTER_MARKER = "O"
+
+    def __init__(self, marker=INITIAL_MARKER):
+        self._marker = marker
+
+    def __str__(self):
+        return self.marker
+
+    @property
+    def marker(self):
+        return self._marker
+
+    @marker.setter
+    def marker(self, marker):
+        self._marker = marker
+
+    def is_empty(self):
+        """Return True if the square has no marker."""
+        return self.marker == Square.INITIAL_MARKER
+
+class Board:
+    """3x3 Tic Tac Toe grid addressed by keys 1 to 9."""
+    def __init__(self):
+        self.squares = {key: Square() for key in range(1, 10)}
+
+    def display(self):
+        print()
+        print("   |   |")
+        print(f" {self.squares[1]} | {self.squares[2]} | {self.squares[3]}")
+        print("___|___|___")
+        print("   |   |")
+        print(f" {self.squares[4]} | {self.squares[5]} | {self.squares[6]}")
+        print("___|___|___")
+        print("   |   |")
+        print(f" {self.squares[7]} | {self.squares[8]} | {self.squares[9]}")
+        print("   |   |")
+        print()
+
+    def available_squares(self):
+        """Return a list of keys for squares that are currently empty."""
+        return [key for key, square in self.squares.items()
+                            if square.is_empty()]
+
+    def mark_square_at(self, key, marker):
+        """Place a marker at a given board key"""
+        self.squares[key].marker = marker
+
+    def is_full(self):
+        """Return True if there are no empty squares remaining."""
+        return len(self.available_squares()) == 0
+
+class Player:
+    def __init__(self, marker):
+        self.marker = marker
+
+class Human(Player):
+    def __init__(self):
+        super().__init__(Square.HUMAN_MARKER)
+
+class Computer(Player):
+    def __init__(self):
+        super().__init__(Square.COMPUTER_MARKER)
+
+class TTTGame:
+    """Orchestrates Tic Tac Toe game."""
+
+    WINNING_ROWS = (
+        (1, 2, 3),
+        (4, 5, 6),
+        (7, 8 ,9),
+        (1, 5, 9),
+        (3, 5, 7),
+        (1, 4, 7),
+        (2, 5, 8),
+        (3, 6, 9),
+    )
+
+    def __init__(self):
+        self.board = Board()
+        self.human = Human()
+        self.computer = Computer()
+
+    def play(self):
+        """Run the main game until someone wins or the borad is full."""
+        self.display_welcome_message()
+
+        while True:
+            clear_screen()
+            self.board.display()
+
+            self.human_moves()
+            if self.is_game_over():
+                break
+
+            self.computer_moves()
+            if self.is_game_over():
+                break
+
+        self.board.display()
+        self.display_results()
+        self.display_goodbye_message()
+
+    def display_welcome_message(self):
+        print("Welcome to Tic Tac Toe!")
+
+    def display_goodbye_message(self):
+        print("Thanks for playing Tic Tac Toe! Goodbye!")
+
+    def human_moves(self):
+        """Ask the user to choose a square to mark. If the choice is
+        not valid, error message will prompt.
+        """
+
+        while True:
+            valid_choices = self.board.available_squares()
+            valid_choices_str = ", ".join([str(num) for num in valid_choices])
+            human_choice = input(f"Please enter a number from ({valid_choices_str}) to "
+                                    "mark a square. Square goes from left to right "
+                                    "from the top to the bottom: ")
+            try:
+                human_choice = int(human_choice)
+            except ValueError:
+                print("Invalid Input. Please type a number.")
+                continue
+
+            if not 1 <= human_choice <= 9:
+                print("Sorry, that's not a valid choice. Choose between 1 and 9")
+            elif human_choice not in valid_choices:
+                print("The square is already taken. Choose another square.")
+            else:
+                self.board.mark_square_at(human_choice, self.human.marker)
+                break
+
+    def computer_moves(self):
+        """Computer choose a random empty square."""
+
+        valid_choices = self.board.available_squares()
+        computer_choice = random.choice(valid_choices)
+        self.board.mark_square_at(computer_choice, self.computer.marker)
+
+    def is_game_over(self):
+        return self.board.is_full() or self.someone_won()
+
+    def winning_marker(self):
+        """
+        Return the winning marker("X" or "O")
+        if any winning row has three idential non-empty markers
+        """
+
+        for a, b, c in TTTGame.WINNING_ROWS:
+            m_a = self.board.squares[a].marker
+            m_b = self.board.squares[b].marker
+            m_c = self.board.squares[c].marker
+            if m_a != Square.INITIAL_MARKER and (m_a == m_b == m_c):
+                return m_a
+
+            return None
+
+    def someone_won(self):
+        """Return True if someone is determined as a winner."""
+
+        return self.winning_marker() is not None
+
+    def display_results(self):
+        winner_marker = self.winning_marker()
+        if winner_marker == Square.HUMAN_MARKER:
+            print("You won! Congratulations!")
+        elif winner_marker == Square.COMPUTER_MARKER:
+            print("Computer won!")
+        elif self.board.is_full():
+            print("It's a tie!")
+
+game = TTTGame()
+game.play()
+

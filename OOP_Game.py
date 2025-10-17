@@ -62,6 +62,9 @@ class Square:
 class Board:
     """3x3 Tic Tac Toe grid addressed by keys 1 to 9."""
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.squares = {key: Square() for key in range(1, 10)}
 
     def display(self):
@@ -124,27 +127,29 @@ class TTTGame:
     def play(self):
         """Run the main game until someone wins or the borad is full."""
         self.display_welcome_message()
+
         while True:
-            clear_screen()
-            self.board = Board()
-            while True:
-                clear_screen()
-                self.board.display()
-
-                self.human_moves()
-                if self.is_game_over():
-                    break
-
-                self.computer_moves()
-                if self.is_game_over():
-                    break
-
+            self.play_one_game()
             self.board.display()
             self.display_results()
             if self.ask_play_again() == 'y':
                 continue
             else:
                 self.display_goodbye_message()
+                break
+
+    def play_one_game(self):
+        self.board.reset()
+        while True:
+            clear_screen()
+            self.board.display()
+
+            self.human_moves()
+            if self.is_game_over():
+                break
+
+            self.computer_moves()
+            if self.is_game_over():
                 break
 
     def display_welcome_message(self):

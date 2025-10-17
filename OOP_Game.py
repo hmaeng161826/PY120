@@ -13,6 +13,28 @@ def clear_screen():
     """Clear the terminal screen."""
     os.system('clear')
 
+def join_or(lst, delimeter=", ", conjunction="or"):
+    """
+    Format and print items from an iterable into a human-readable string.
+
+    - For 2 items: joins them with 'or' (e.g., 'A or B').
+    - For 3 or more items: joins with the given delimiter, and adds the conjunction
+    before the last item (e.g., 'A, B, or C').
+    - For 1 or 0 items: prints the item (or empty list) directly.
+
+    Arguments:
+    lst (iterable): The collection of items to format.
+    delimiter (str): The string to use between items (default: ', ').
+    connector (str): The word to use before the final item (default: 'or').
+    """
+    lst_str = [str(item) for item in lst]
+    if len(lst_str) == 2:
+        return " or ".join(lst_str)
+    elif len(lst_str) >= 3:
+        return delimeter.join(lst_str[:-1]) + delimeter + conjunction + " " + lst_str[-1]
+    else:
+        return str(lst_str)
+
 class Square:
     """A single board cell that holds a marker."""
     INITIAL_MARKER = " "
@@ -102,22 +124,28 @@ class TTTGame:
     def play(self):
         """Run the main game until someone wins or the borad is full."""
         self.display_welcome_message()
-
         while True:
             clear_screen()
+            self.board = Board()
+            while True:
+                clear_screen()
+                self.board.display()
+
+                self.human_moves()
+                if self.is_game_over():
+                    break
+
+                self.computer_moves()
+                if self.is_game_over():
+                    break
+
             self.board.display()
-
-            self.human_moves()
-            if self.is_game_over():
+            self.display_results()
+            if self.ask_play_again() == 'y':
+                continue
+            else:
+                self.display_goodbye_message()
                 break
-
-            self.computer_moves()
-            if self.is_game_over():
-                break
-
-        self.board.display()
-        self.display_results()
-        self.display_goodbye_message()
 
     def display_welcome_message(self):
         print("Welcome to Tic Tac Toe!")
@@ -132,8 +160,7 @@ class TTTGame:
 
         while True:
             valid_choices = self.board.available_squares()
-            valid_choices_str = ", ".join([str(num) for num in valid_choices])
-            human_choice = input(f"Please enter a number from ({valid_choices_str}) to "
+            human_choice = input(f"Please enter a number ({join_or(valid_choices)}) to "
                                     "mark a square. Square goes from left to right "
                                     "from the top to the bottom: ")
             try:
@@ -173,7 +200,7 @@ class TTTGame:
             if m_a != Square.INITIAL_MARKER and (m_a == m_b == m_c):
                 return m_a
 
-            return None
+        return None
 
     def someone_won(self):
         """Return True if someone is determined as a winner."""
@@ -188,6 +215,18 @@ class TTTGame:
             print("Computer won!")
         elif self.board.is_full():
             print("It's a tie!")
+
+    @staticmethod
+    def ask_play_again():
+        while True:
+            response = input("Do you want to play another game? (y/n) ").lower()
+            if response == "y" or response == "n":
+                return response
+            else:
+                print("Invalid input. Please enter y or n.")
+
+
+
 
 game = TTTGame()
 game.play()

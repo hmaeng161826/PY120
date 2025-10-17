@@ -189,26 +189,36 @@ class TTTGame:
 
         valid_choices = self.board.available_squares()
 
-        if self.immediate_threat_square() != None:
-            defensive_choices = self.immediate_threat_square()
-            computer_choice = defensive_choices
+        if self.smart_choices() != None:
+            computer_choice = self.smart_choices()
         else:
-            computer_choice = random.choice(valid_choices)
             computer_choice = random.choice(valid_choices)
 
         self.board.mark_square_at(computer_choice, self.computer.marker)
 
-    def immediate_threat_square(self):
+    def smart_choices(self):
+        """
+        Determine the most strategic square for the computer to choose.
+        This method scans all possible winning rows. It returns the key (1-9)
+        of a square that either:
+      - blocks an immediate threat (two human markers in a row with one empty),
+        or
+      - completes a potential winning row for the computer
+        (two computer markers in a row with one empty).
+
+        If there is no such square, it returns None.
+        """
+
         for a, b, c in TTTGame.WINNING_ROWS:
             m_a = self.board.squares[a].marker
             m_b = self.board.squares[b].marker
             m_c = self.board.squares[c].marker
 
-            if (m_a == m_b == self.human.marker) and m_c == Square.INITIAL_MARKER:
+            if m_a == m_b and m_c == Square.INITIAL_MARKER:
                 return c
-            elif (m_b == m_c == self.human.marker) and m_a == Square.INITIAL_MARKER:
+            elif m_b == m_c and m_a == Square.INITIAL_MARKER:
                 return a
-            elif (m_a == m_c == self.human.marker) and m_b == Square.INITIAL_MARKER:
+            elif m_a == m_c and m_b == Square.INITIAL_MARKER:
                 return b
 
         return None

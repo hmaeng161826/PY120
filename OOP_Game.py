@@ -183,11 +183,35 @@ class TTTGame:
                 break
 
     def computer_moves(self):
-        """Computer choose a random empty square."""
+        """When the human has 2 squares in a row with an unused square
+        in the 3rd position of that row, Computer will choose the unused square.
+        Otherwise, Computer choose a random empty square."""
 
         valid_choices = self.board.available_squares()
-        computer_choice = random.choice(valid_choices)
+
+        if self.immediate_threat_square() != None:
+            defensive_choices = self.immediate_threat_square()
+            computer_choice = defensive_choices
+        else:
+            computer_choice = random.choice(valid_choices)
+            computer_choice = random.choice(valid_choices)
+
         self.board.mark_square_at(computer_choice, self.computer.marker)
+
+    def immediate_threat_square(self):
+        for a, b, c in TTTGame.WINNING_ROWS:
+            m_a = self.board.squares[a].marker
+            m_b = self.board.squares[b].marker
+            m_c = self.board.squares[c].marker
+
+            if (m_a == m_b == self.human.marker) and m_c == Square.INITIAL_MARKER:
+                return c
+            elif (m_b == m_c == self.human.marker) and m_a == Square.INITIAL_MARKER:
+                return a
+            elif (m_a == m_c == self.human.marker) and m_b == Square.INITIAL_MARKER:
+                return b
+
+        return None
 
     def is_game_over(self):
         return self.board.is_full() or self.someone_won()

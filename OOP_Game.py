@@ -250,15 +250,13 @@ class TTTGame:
 
     def smart_choices(self):
         """
-        Determine the most strategic square for the computer to choose.
-        This method scans all possible winning rows. It returns the key (1-9)
-        of a square that either:
-      - blocks an immediate threat (two human markers in a row with one empty),
-        or
-      - completes a potential winning row for the computer
-        (two computer markers in a row with one empty).
+        Determine the most strategic move for the computer.
 
-        If there is no such square, it returns None.
+        The computer first checks for a winning move for itself and selects
+        that square.
+        If none exists, it checks for a potential winning move by the human
+        player and chooses that square to block. If neither case applies,
+        it returns None.
         """
 
         if self.find_winning_square(self.computer.marker) != None:

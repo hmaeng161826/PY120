@@ -13,7 +13,7 @@ def clear_screen():
     """Clear the terminal screen."""
     os.system('clear')
 
-def join_or(lst, delimeter=", ", conjunction="or"):
+def join_or(lst, delimiter=", ", conjunction="or"):
     """
     Format and print items from an iterable into a human-readable string.
 
@@ -25,15 +25,16 @@ def join_or(lst, delimeter=", ", conjunction="or"):
     Arguments:
     lst (iterable): The collection of items to format.
     delimiter (str): The string to use between items (default: ', ').
-    connector (str): The word to use before the final item (default: 'or').
+    conjunction (str): The word to use before the final item (default: 'or').
     """
     lst_str = [str(item) for item in lst]
     if len(lst_str) == 2:
         return " or ".join(lst_str)
-    elif len(lst_str) >= 3:
-        return delimeter.join(lst_str[:-1]) + delimeter + conjunction + " " + lst_str[-1]
-    else:
-        return str(lst_str)
+
+    if len(lst_str) >= 3:
+        return delimiter.join(lst_str[:-1]) + delimiter + conjunction + " " + lst_str[-1]
+
+    return lst_str[0]
 
 class Square:
     """A single board cell that holds a marker."""
@@ -137,7 +138,7 @@ class TTTGame:
         while True:
             self.play_one_game()
 
-            if self.grand_winner_determined() != None:
+            if self.grand_winner_determined() is not None:
                 self.display_grand_winner()
                 self.display_goodbye_message()
                 break
@@ -154,10 +155,10 @@ class TTTGame:
     def grand_winner_determined(self):
         if self.human.score == 3:
             return 'human'
-        elif self.computer.score == 3:
+        if self.computer.score == 3:
             return 'computer'
-        else:
-            return None
+
+        return None
 
     def display_grand_winner(self):
         if self.grand_winner_determined() == 'human':
@@ -249,7 +250,7 @@ class TTTGame:
 
         valid_choices = self.board.available_squares()
 
-        if self.smart_choices() != None:
+        if self.smart_choices() is not None:
             computer_choice = self.smart_choices()
         else:
             computer_choice = random.choice(valid_choices)
@@ -265,9 +266,9 @@ class TTTGame:
 
             if m_a == m_b == marker and m_c == Square.INITIAL_MARKER:
                 return c
-            elif m_b == m_c == marker and m_a == Square.INITIAL_MARKER:
+            if m_b == m_c == marker and m_a == Square.INITIAL_MARKER:
                 return a
-            elif m_a == m_c == marker and m_b == Square.INITIAL_MARKER:
+            if m_a == m_c == marker and m_b == Square.INITIAL_MARKER:
                 return b
 
         return None
@@ -284,12 +285,13 @@ class TTTGame:
         it returns None.
         """
 
-        if self.find_winning_square(self.computer.marker) != None:
+        if self.find_winning_square(self.computer.marker) is not None:
             return self.find_winning_square(self.computer.marker)
-        elif self.find_winning_square(self.human.marker) != None:
+
+        if self.find_winning_square(self.human.marker) is not None:
             return self.find_winning_square(self.human.marker)
-        else:
-            None
+
+        return None
 
     def is_game_over(self):
         return self.board.is_full() or self.someone_won()
@@ -318,10 +320,12 @@ class TTTGame:
         winner_marker = self.winning_marker()
         if winner_marker == Square.HUMAN_MARKER:
             return 'human'
-        elif winner_marker == Square.COMPUTER_MARKER:
+        if winner_marker == Square.COMPUTER_MARKER:
             return 'computer'
-        elif self.board.is_full():
+        if self.board.is_full():
             return 'tie'
+
+        return None
 
     def display_results(self):
         if self.determine_winner() == 'human':
@@ -335,13 +339,13 @@ class TTTGame:
     def ask_play_again():
         while True:
             response = input("Do you want to play another game? (y/n) ").lower()
-            if response == "y" or response == "n":
+
+            if response in ["y", "n"]:
                 return response
-            else:
-                print("Invalid input. Please enter y or n.")
+
+            print("Invalid input. Please enter y or n.")
 
 
 
 game = TTTGame()
 game.play()
-

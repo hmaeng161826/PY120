@@ -128,6 +128,7 @@ class TTTGame:
         self.board = Board()
         self.human = Human()
         self.computer = Computer()
+        self.player_going_first = 'human'
 
     def play(self):
         """Run the main game until someone wins or the borad is full."""
@@ -169,22 +170,46 @@ class TTTGame:
     def play_one_game(self):
         self.board.reset()
 
-        while True:
+        if self.player_going_first == 'human':
 
-            self.board.display()
+            while True:
 
-            self.human_moves()
-            if self.is_game_over():
-                break
+                self.board.display()
 
-            self.computer_moves()
-            if self.is_game_over():
-                break
+                self.human_moves()
+                if self.is_game_over():
+                    break
+
+                self.computer_moves()
+                if self.is_game_over():
+                    break
+                clear_screen()
             clear_screen()
-        clear_screen()
-        self.display_results()
-        self.update_current_score()
-        self.display_current_score()
+            self.display_results()
+            self.update_current_score()
+            self.display_current_score()
+            self.player_going_first = 'computer'
+
+        elif self.player_going_first == 'computer':
+
+            while True:
+
+                self.computer_moves()
+                if self.is_game_over():
+                    break
+
+                self.board.display()
+
+                self.human_moves()
+                if self.is_game_over():
+                    break
+
+                clear_screen()
+            clear_screen()
+            self.display_results()
+            self.update_current_score()
+            self.display_current_score()
+            self.player_going_first = 'human'
 
 
     def display_welcome_message(self):

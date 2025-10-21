@@ -34,7 +34,8 @@ def join_or(lst, delimiter=", ", conjunction="or"):
     if len(lst_str) >= 3:
         return delimiter.join(lst_str[:-1]) + delimiter + conjunction + " " + lst_str[-1]
 
-    return lst_str[0]
+    if len(lst_str) <= 1:
+        return "" if len(lst_str) == 0 else lst_str[0]
 
 class Square:
     """A single board cell that holds a marker."""
@@ -95,21 +96,93 @@ class Board:
         return len(self.available_squares()) == 0
 
 class Player:
-    def __init__(self, marker):
+    def __init__(self, marker, board):
         self.marker = marker
-
-    # def score_reset(self):
-    #     self.score = 0
+        self.board = board
 
 class Human(Player):
-    def __init__(self):
-        super().__init__(Square.HUMAN_MARKER)
+    def __init__(self, board):
+        super().__init__(Square.HUMAN_MARKER, board)
         self.score = 0
 
+    def moves(self):
+        """Ask the user to choose a square to mark. If the choice is
+        not valid, error message will prompt.
+        """
+
+        while True:
+            valid_choices = self.board.available_squares()
+            human_choice = input(f"Please enter a number ({join_or(valid_choices)}) to "
+                                    "mark a square. Square goes from left to right "
+                                    "from the top to the bottom: ")
+            try:
+                human_choice = int(human_choice)
+            except ValueError:
+                print("Invalid Input. Please type a number.")
+                continue
+
+            if not 1 <= human_choice <= 9:
+                print("Sorry, that's not a valid choice. Choose between 1 and 9")
+            elif human_choice not in valid_choices:
+                print("The square is already taken. Choose another square.")
+            else:
+                self.board.mark_square_at(human_choice, self.marker)
+                break
+
 class Computer(Player):
-    def __init__(self):
-        super().__init__(Square.COMPUTER_MARKER)
+    def __init__(self, board, winning_rows):
+        super().__init__(Square.COMPUTER_MARKER, board)
         self.score = 0
+        self.winning_rows = winning_rows
+
+    def moves(self, opponent_marker):
+        """When the human has 2 squares in a row with an unused square
+        in the 3rd position of that row, Computer will choose the unused square.
+        Otherwise, Computer choose a random empty square."""
+
+        valid_choices = self.board.available_squares()
+
+        if self.smart_choices(opponent_marker) is not None:
+            computer_choice = self.smart_choices(opponent_marker)
+        else:
+            computer_choice = random.choice(valid_choices)
+
+        self.board.mark_square_at(computer_choice, self.marker)
+
+    def smart_choices(self, opponent_marker):
+        """
+        Determine the most strategic move for the computer.
+
+        The computer first checks for a winning move for itself and selects
+        that square.
+        If none exists, it checks for a potential winning move by the human
+        player and chooses that square to block. If neither case applies,
+        it returns None.
+        """
+
+        if self.find_winning_square(self.marker) is not None:
+            return self.find_winning_square(self.marker)
+
+        if self.find_winning_square(opponent_marker) is not None:
+            return self.find_winning_square(opponent_marker)
+
+        return None
+
+    def find_winning_square(self, marker):
+
+        for a, b, c in self.winning_rows:
+            m_a = self.board.squares[a].marker
+            m_b = self.board.squares[b].marker
+            m_c = self.board.squares[c].marker
+
+            if m_a == m_b == marker and m_c == Square.INITIAL_MARKER:
+                return c
+            if m_b == m_c == marker and m_a == Square.INITIAL_MARKER:
+                return a
+            if m_a == m_c == marker and m_b == Square.INITIAL_MARKER:
+                return b
+
+        return None
 
 class TTTGame:
     """Orchestrates Tic Tac Toe game."""
@@ -127,8 +200,8 @@ class TTTGame:
 
     def __init__(self):
         self.board = Board()
-        self.human = Human()
-        self.computer = Computer()
+        self.human = Human(self.board)
+        self.computer = Computer(self.board, TTTGame.WINNING_ROWS)
         self.player_going_first = 'human'
 
     def play(self):
@@ -155,12 +228,12 @@ class TTTGame:
 
             if current_player == 'human':
 
-                self.human_moves()
+                self.human.moves()
                 current_player = 'computer'
 
             elif current_player == 'computer':
 
-                self.computer_moves()
+                self.computer.moves(self.human.marker)
                 current_player = 'human'
 
             if self.is_game_over():
@@ -195,46 +268,11 @@ class TTTGame:
 
         return None
 
-    def find_winning_square(self, marker):
-
-        for a, b, c in TTTGame.WINNING_ROWS:
-            m_a = self.board.squares[a].marker
-            m_b = self.board.squares[b].marker
-            m_c = self.board.squares[c].marker
-
-            if m_a == m_b == marker and m_c == Square.INITIAL_MARKER:
-                return c
-            if m_b == m_c == marker and m_a == Square.INITIAL_MARKER:
-                return a
-            if m_a == m_c == marker and m_b == Square.INITIAL_MARKER:
-                return b
-
-        return None
-
-    def smart_choices(self):
-        """
-        Determine the most strategic move for the computer.
-
-        The computer first checks for a winning move for itself and selects
-        that square.
-        If none exists, it checks for a potential winning move by the human
-        player and chooses that square to block. If neither case applies,
-        it returns None.
-        """
-
-        if self.find_winning_square(self.computer.marker) is not None:
-            return self.find_winning_square(self.computer.marker)
-
-        if self.find_winning_square(self.human.marker) is not None:
-            return self.find_winning_square(self.human.marker)
-
-        return None
-
     def determine_winner(self):
         winner_marker = self.winning_marker()
-        if winner_marker == Square.HUMAN_MARKER:
+        if winner_marker == self.human.marker:
             return 'human'
-        if winner_marker == Square.COMPUTER_MARKER:
+        if winner_marker == self.computer.marker:
             return 'computer'
         if self.board.is_full():
             return 'tie'
@@ -249,48 +287,11 @@ class TTTGame:
 
         return None
 
-    def human_moves(self):
-        """Ask the user to choose a square to mark. If the choice is
-        not valid, error message will prompt.
-        """
-
-        while True:
-            valid_choices = self.board.available_squares()
-            human_choice = input(f"Please enter a number ({join_or(valid_choices)}) to "
-                                    "mark a square. Square goes from left to right "
-                                    "from the top to the bottom: ")
-            try:
-                human_choice = int(human_choice)
-            except ValueError:
-                print("Invalid Input. Please type a number.")
-                continue
-
-            if not 1 <= human_choice <= 9:
-                print("Sorry, that's not a valid choice. Choose between 1 and 9")
-            elif human_choice not in valid_choices:
-                print("The square is already taken. Choose another square.")
-            else:
-                self.board.mark_square_at(human_choice, self.human.marker)
-                break
-
-    def computer_moves(self):
-        """When the human has 2 squares in a row with an unused square
-        in the 3rd position of that row, Computer will choose the unused square.
-        Otherwise, Computer choose a random empty square."""
-
-        valid_choices = self.board.available_squares()
-
-        if self.smart_choices() is not None:
-            computer_choice = self.smart_choices()
-        else:
-            computer_choice = random.choice(valid_choices)
-
-        self.board.mark_square_at(computer_choice, self.computer.marker)
-
     def update_current_score(self):
-        if self.determine_winner() == 'human':
+        winner = self.determine_winner()
+        if winner == 'human':
             self.human.score += 1
-        elif self.determine_winner() == 'computer':
+        elif winner == 'computer':
             self.computer.score += 1
 
     def update_player_going_first(self):
@@ -320,15 +321,15 @@ class TTTGame:
         elif self.determine_winner() == 'tie':
             print("It's a tie!")
 
-    @staticmethod
-    def ask_play_again():
-        while True:
-            response = input("Do you want to play another game? (y/n) ").lower()
+    # @staticmethod
+    # def ask_play_again():
+    #     while True:
+    #         response = input("Do you want to play another game? (y/n) ").lower()
 
-            if response in ["y", "n"]:
-                return response
+    #         if response in ["y", "n"]:
+    #             return response
 
-            print("Invalid input. Please enter y or n.")
+    #         print("Invalid input. Please enter y or n.")
 
 game = TTTGame()
 game.play()

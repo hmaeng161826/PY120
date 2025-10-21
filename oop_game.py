@@ -143,14 +143,103 @@ class TTTGame:
                 self.display_goodbye_message()
                 break
 
-    def update_current_score(self):
-        if self.determine_winner() == 'human':
-            self.human.score += 1
-        elif self.determine_winner() == 'computer':
-            self.computer.score += 1
+    def play_one_game(self):
+        self.board.reset()
+        current_player = self.player_going_first
 
-    def display_current_score(self):
-        print(f'human: {self.human.score} = computer: {self.computer.score}')
+        while True:
+
+            clear_screen()
+            self.display_current_score()
+            self.board.display()
+
+            if current_player == 'human':
+
+                self.human_moves()
+                current_player = 'computer'
+
+            elif current_player == 'computer':
+
+                self.computer_moves()
+                current_player = 'human'
+
+            if self.is_game_over():
+                break
+
+        clear_screen()
+        self.board.display()
+        self.display_results()
+        self.update_current_score()
+        self.update_player_going_first()
+
+    def is_game_over(self):
+        return self.board.is_full() or self.someone_won()
+
+    def someone_won(self):
+        """Return True if someone is determined as a winner."""
+
+        return self.winning_marker() is not None
+
+    def winning_marker(self):
+        """
+        Return the winning marker("X" or "O")
+        if any winning row has three idential non-empty markers
+        """
+
+        for a, b, c in TTTGame.WINNING_ROWS:
+            m_a = self.board.squares[a].marker
+            m_b = self.board.squares[b].marker
+            m_c = self.board.squares[c].marker
+            if m_a != Square.INITIAL_MARKER and (m_a == m_b == m_c):
+                return m_a
+
+        return None
+
+    def find_winning_square(self, marker):
+
+        for a, b, c in TTTGame.WINNING_ROWS:
+            m_a = self.board.squares[a].marker
+            m_b = self.board.squares[b].marker
+            m_c = self.board.squares[c].marker
+
+            if m_a == m_b == marker and m_c == Square.INITIAL_MARKER:
+                return c
+            if m_b == m_c == marker and m_a == Square.INITIAL_MARKER:
+                return a
+            if m_a == m_c == marker and m_b == Square.INITIAL_MARKER:
+                return b
+
+        return None
+
+    def smart_choices(self):
+        """
+        Determine the most strategic move for the computer.
+
+        The computer first checks for a winning move for itself and selects
+        that square.
+        If none exists, it checks for a potential winning move by the human
+        player and chooses that square to block. If neither case applies,
+        it returns None.
+        """
+
+        if self.find_winning_square(self.computer.marker) is not None:
+            return self.find_winning_square(self.computer.marker)
+
+        if self.find_winning_square(self.human.marker) is not None:
+            return self.find_winning_square(self.human.marker)
+
+        return None
+
+    def determine_winner(self):
+        winner_marker = self.winning_marker()
+        if winner_marker == Square.HUMAN_MARKER:
+            return 'human'
+        if winner_marker == Square.COMPUTER_MARKER:
+            return 'computer'
+        if self.board.is_full():
+            return 'tie'
+
+        return None
 
     def grand_winner_determined(self):
         if self.human.score == 3:
@@ -159,65 +248,6 @@ class TTTGame:
             return 'computer'
 
         return None
-
-    def display_grand_winner(self):
-        if self.grand_winner_determined() == 'human':
-            print('Congratulations! The grand winner is you!')
-        elif self.grand_winner_determined() == 'computer':
-            print('Sorry! The grand winner is computer!')
-
-
-
-    def play_one_game(self):
-        self.board.reset()
-
-        if self.player_going_first == 'human':
-
-            while True:
-
-                self.board.display()
-
-                self.human_moves()
-                if self.is_game_over():
-                    break
-
-                self.computer_moves()
-                if self.is_game_over():
-                    break
-                clear_screen()
-            clear_screen()
-            self.display_results()
-            self.update_current_score()
-            self.display_current_score()
-            self.player_going_first = 'computer'
-
-        elif self.player_going_first == 'computer':
-
-            while True:
-
-                self.computer_moves()
-                if self.is_game_over():
-                    break
-
-                self.board.display()
-
-                self.human_moves()
-                if self.is_game_over():
-                    break
-
-                clear_screen()
-            clear_screen()
-            self.display_results()
-            self.update_current_score()
-            self.display_current_score()
-            self.player_going_first = 'human'
-
-
-    def display_welcome_message(self):
-        print("Welcome to Tic Tac Toe!")
-
-    def display_goodbye_message(self):
-        print("Thanks for playing Tic Tac Toe! Goodbye!")
 
     def human_moves(self):
         """Ask the user to choose a square to mark. If the choice is
@@ -257,75 +287,30 @@ class TTTGame:
 
         self.board.mark_square_at(computer_choice, self.computer.marker)
 
-    def find_winning_square(self, marker):
+    def update_current_score(self):
+        if self.determine_winner() == 'human':
+            self.human.score += 1
+        elif self.determine_winner() == 'computer':
+            self.computer.score += 1
 
-        for a, b, c in TTTGame.WINNING_ROWS:
-            m_a = self.board.squares[a].marker
-            m_b = self.board.squares[b].marker
-            m_c = self.board.squares[c].marker
+    def update_player_going_first(self):
+        self.player_going_first = ('computer' if self.player_going_first == 'human'
+        else 'human')
 
-            if m_a == m_b == marker and m_c == Square.INITIAL_MARKER:
-                return c
-            if m_b == m_c == marker and m_a == Square.INITIAL_MARKER:
-                return a
-            if m_a == m_c == marker and m_b == Square.INITIAL_MARKER:
-                return b
+    def display_current_score(self):
+        print(f'human: {self.human.score} = computer: {self.computer.score}')
 
-        return None
+    def display_grand_winner(self):
+        if self.grand_winner_determined() == 'human':
+            print('Congratulations! The grand winner is you!')
+        elif self.grand_winner_determined() == 'computer':
+            print('Sorry! The grand winner is computer!')
 
+    def display_welcome_message(self):
+        print("Welcome to Tic Tac Toe!")
 
-    def smart_choices(self):
-        """
-        Determine the most strategic move for the computer.
-
-        The computer first checks for a winning move for itself and selects
-        that square.
-        If none exists, it checks for a potential winning move by the human
-        player and chooses that square to block. If neither case applies,
-        it returns None.
-        """
-
-        if self.find_winning_square(self.computer.marker) is not None:
-            return self.find_winning_square(self.computer.marker)
-
-        if self.find_winning_square(self.human.marker) is not None:
-            return self.find_winning_square(self.human.marker)
-
-        return None
-
-    def is_game_over(self):
-        return self.board.is_full() or self.someone_won()
-
-    def winning_marker(self):
-        """
-        Return the winning marker("X" or "O")
-        if any winning row has three idential non-empty markers
-        """
-
-        for a, b, c in TTTGame.WINNING_ROWS:
-            m_a = self.board.squares[a].marker
-            m_b = self.board.squares[b].marker
-            m_c = self.board.squares[c].marker
-            if m_a != Square.INITIAL_MARKER and (m_a == m_b == m_c):
-                return m_a
-
-        return None
-
-    def someone_won(self):
-        """Return True if someone is determined as a winner."""
-
-        return self.winning_marker() is not None
-
-    def determine_winner(self):
-        winner_marker = self.winning_marker()
-        if winner_marker == Square.HUMAN_MARKER:
-            return 'human'
-        if winner_marker == Square.COMPUTER_MARKER:
-            return 'computer'
-        if self.board.is_full():
-            return 'tie'
-
-        return None
+    def display_goodbye_message(self):
+        print("Thanks for playing Tic Tac Toe! Goodbye!")
 
     def display_results(self):
         if self.determine_winner() == 'human':
@@ -344,8 +329,6 @@ class TTTGame:
                 return response
 
             print("Invalid input. Please enter y or n.")
-
-
 
 game = TTTGame()
 game.play()

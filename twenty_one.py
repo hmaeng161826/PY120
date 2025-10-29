@@ -1,4 +1,8 @@
 import random
+import os
+
+def clear_screen():
+    os.system('clear')
 
 class Deck:
     def __init__(self):
@@ -10,9 +14,60 @@ class Participants:
     def __init__(self):
         self.score = 0
         self.cards = []
+        self.total_values = 0
 
-    def plays(self):
+    def hit(self, dealer):
+        dealer.deals_a_card(self)
+        print(f"Drawn card is {self.cards[-1]}.")
+
+    def display_initial_values(self):
+
+        for suit, value in self.cards:
+            if value in ["Jack", "Queen", "King", "Ace"]:
+                value = 10
+                self.total_values += value
+            elif value == 'Ace' and self.total_values + value > 21:
+                value = 1
+                self.total_values += value
+            elif value == 'Ace' and self.total_values + value <= 21:
+                value = 11
+                self.total_values += value
+            else:
+                self.total_values += value
+        print(f'You have {self.cards}.')
+        print(f'Your current total value is {self.total_values}')
+
+    def calculate_additional_value(self):
+        suit, added_value = self.cards[-1]
+        if added_value in ["Jack", "Queen", "King"]:
+            added_value = 10
+            self.total_values += added_value
+        elif added_value == 'Ace' and self.total_values + added_value > 21:
+            added_value = 1
+            self.total_values += added_value
+        elif added_value == 'Ace' and self.total_values + added_value <= 21:
+            added_value = 11
+            self.total_values += added_value
+        else:
+            self.total_values += added_value
+
+        return self.total_values
+
+    def stay(self):
         pass
+
+    def busted(self):
+        return self.total_values > 21
+
+    def reset(self):
+        self.cards = []
+        self.total_values = 0
+
+    # def reveal_values(self):
+
+    #     print(f'Current total values is {self.total_values}.')
+
+
 
 class Dealer(Participants):
     def __init__(self):
@@ -22,14 +77,24 @@ class Dealer(Participants):
     def shuffle_cards(self):
         random.shuffle(self.deck.cards)
 
-    def deals(self, player):
-        #deals cards. two randon cards to the dealer and the player
-       player.cards = [self.deck.cards.pop(), self.deck.cards.pop()]
-       self.cards = [self.deck.cards.pop(), self.deck.cards.pop()]
+    def initial_deals(self, player):
+        player.cards = [self.deck.cards.pop(), self.deck.cards.pop()]
+        self.cards = [self.deck.cards.pop(), self.deck.cards.pop()]
 
-    def plays(self):
-        #hit or stay
-        pass
+    def deals_a_card(self, participant):
+        participant.cards.append(self.deck.cards.pop())
+
+    def plays(self, dealer):
+        while self.total_values <= 17:
+            self.hit(dealer)
+            self.calculate_additional_value()
+            if self.busted():
+                print('Dealer busted!')
+                break
+
+    def reveal_card(self):
+        random_card = random.choice(self.cards)
+        print(f'Dealer has {random_card}.')
 
 class Player(Participants):
     def __init__(self):
@@ -42,12 +107,24 @@ class Player(Participants):
         return self.betting_money in [rich, poor]
 
     def reset(self):
+        super().reset()
         self.betting_money = 5
-        self.cards = None
 
-    def plays(self):
-        #hit or stay
-        pass
+    def plays(self, dealer):
+        while True:
+            if self.busted():
+                print('Oops! You busted!')
+                break
+            else:
+                move = input("Choose `hit` or `stay`: ")
+                if move == 'hit':
+                    self.hit(dealer)
+                    print(f'Your current total value is {self.calculate_additional_value()}')
+                elif move == 'stay':
+                    print(f'Your final total value is {self.total_values}')
+                    break
+                else:
+                    print('Invalid Input. Type either hit or stay.')
 
 class TwentyOneGame:
     def __init__(self):
@@ -59,19 +136,31 @@ class TwentyOneGame:
         self.player.reset()
 
         while True:
+            self.player.reset()
+            self.dealer.reset()
             self.play_one_game()
             if self.ask_another_game() == 'n' or self.player.rich_or_poor():
                 break
+            clear_screen()
 
         self.display_goodbye_message()
 
     def play_one_game(self):
-        self.dealer.shuffle_cards()
-        self.dealer.deals(self.player)
-        self.player.plays()
-        self.dealer.plays()
-        self.display_result()
-        self.update_betting_money()
+        while True:
+            self.dealer.shuffle_cards()
+            self.dealer.initial_deals(self.player)
+            self.dealer.reveal_card()
+            self.player.display_initial_values()
+            self.player.plays(self.dealer)
+            if self.player.busted():
+                break
+            self.dealer.plays(self.dealer)
+            if self.dealer.busted():
+                break
+            self.display_result()
+            self.update_betting_money()
+
+            break
 
     def update_betting_money(self):
         #self.player.betting_money += 1 or -= 1 depends on the result
@@ -104,9 +193,17 @@ class TwentyOneGame:
         "Good luck and have fun! :) ")
 
     def display_result(self):
-        pass
+        print(f'Final value is Player: {self.player.total_values} : Dealer: '
+        f'{self.dealer.total_values}')
+        if self.player.total_values > self.dealer.total_values:
+            print("Congratulations! You won!")
+        elif self.player.total_values < self.dealer.total_values:
+            print("Sorry! Dealer won!")
+        else:
+            print("It's a tie!")
 
     def display_goodbye_message(self):
-        pass
+        print("Thanks for playing Twenty-One Game! Goodbye!")
+
 game = TwentyOneGame()
 game.start()
